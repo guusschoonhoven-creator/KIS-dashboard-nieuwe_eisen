@@ -12,7 +12,27 @@ const roleDescriptions = {
   fysiotherapeut: "Longrevalidatie • belastbaarheid, bewegen en voortgang"
 };
 
+const demoUsers = {
+  huisarts: {
+    password: "demo123",
+    role: "huisarts",
+    name: "Demo Huisarts"
+  },
+  longarts: {
+    password: "demo123",
+    role: "longarts",
+    name: "Demo Longarts"
+  },
+  fysio: {
+    password: "demo123",
+    role: "fysiotherapeut",
+    name: "Demo Fysiotherapeut"
+  }
+};
+
 const defaultState = {
+  isAuthenticated: false,
+  loggedInUser: null,
   currentRole: null,
   activeTab: "overzicht",
   selectedPatientId: "p001",
@@ -232,11 +252,6 @@ function render() {
 
     return;
   }
-
-  app.innerHTML = layoutTemplate();
-  bindBaseEvents();
-  renderTab();
-}
 
   app.innerHTML = layoutTemplate();
   bindBaseEvents();
