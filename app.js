@@ -113,6 +113,45 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function login(username, password) {
+  const normalizedUsername = username.trim().toLowerCase();
+  const user = demoUsers[normalizedUsername];
+
+  if (!user || user.password !== password) {
+    showLoginError("Gebruikersnaam of wachtwoord is onjuist.");
+    return;
+  }
+
+  state.isAuthenticated = true;
+  state.loggedInUser = {
+    username: normalizedUsername,
+    name: user.name
+  };
+  state.currentRole = user.role;
+  state.activeTab = "overzicht";
+
+  saveState();
+  render();
+}
+
+function logout() {
+  state.isAuthenticated = false;
+  state.loggedInUser = null;
+  state.currentRole = null;
+  state.activeTab = "overzicht";
+
+  saveState();
+  render();
+}
+
+function showLoginError(message) {
+  const errorBox = document.getElementById("login-error");
+  if (errorBox) {
+    errorBox.textContent = message;
+    errorBox.classList.remove("hidden");
+  }
+}
+
 function resetState() {
   localStorage.removeItem(STORAGE_KEY);
   state = cloneDefaultState();
@@ -179,13 +218,16 @@ function escapeHtml(value) {
 function render() {
   const app = document.getElementById("app");
 
-  if (!state.currentRole) {
-    const template = document.getElementById("login-template");
-    app.innerHTML = "";
-    app.appendChild(template.content.cloneNode(true));
+  if (!state.isAuthenticated) {
+    app.innerHTML = loginPageTemplate();
 
-    document.querySelectorAll("[data-role]").forEach(button => {
-      button.addEventListener("click", () => setRole(button.dataset.role));
+    const loginForm = document.getElementById("login-form");
+
+    loginForm.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const form = new FormData(loginForm);
+      login(form.get("username"), form.get("password"));
     });
 
     return;
@@ -194,6 +236,68 @@ function render() {
   app.innerHTML = layoutTemplate();
   bindBaseEvents();
   renderTab();
+}
+
+  app.innerHTML = layoutTemplate();
+  bindBaseEvents();
+  renderTab();
+}
+
+function loginPageTemplate() {
+  return `
+    <main class="login-shell">
+      <section class="login-card">
+        <div class="brand-row">
+          <div class="brand-mark">KIS</div>
+          <div>
+            <p class="eyebrow">Beveiligde demo-omgeving</p>
+            <h1>Inloggen KIS-dashboard</h1>
+          </div>
+        </div>
+
+        <p class="lead">
+          Log in met een testaccount om toegang te krijgen tot de rolgerichte demo van het COPD-ketenzorgdashboard.
+        </p>
+
+        <form id="login-form" class="form-grid">
+          <label>Gebruikersnaam
+            <input 
+              name="username" 
+              type="text" 
+              autocomplete="username"
+              placeholder="Bijvoorbeeld: huisarts" 
+              required 
+            />
+          </label>
+
+          <label>Wachtwoord
+            <input 
+              name="password" 
+              type="password" 
+              autocomplete="current-password"
+              placeholder="demo123" 
+              required 
+            />
+          </label>
+
+          <p id="login-error" class="notice hidden"></p>
+
+          <div class="actions">
+            <button class="primary-button" type="submit">Inloggen</button>
+          </div>
+        </form>
+
+        <details class="demo-details">
+          <summary>Demo-inloggegevens</summary>
+          <p>
+            Huisarts: <strong>huisarts</strong> / demo123<br>
+            Longarts: <strong>longarts</strong> / demo123<br>
+            Fysiotherapeut: <strong>fysio</strong> / demo123
+          </p>
+        </details>
+      </section>
+    </main>
+  `;
 }
 
 function layoutTemplate() {
@@ -206,7 +310,7 @@ function layoutTemplate() {
           <div class="brand-mark">KIS</div>
           <div>
             <h2>${roleLabels[role]}</h2>
-            <p>${roleDescriptions[role]}</p>
+<p>${state.loggedInUser?.name || roleDescriptions[role]}</p>
           </div>
         </div>
 
@@ -221,7 +325,7 @@ function layoutTemplate() {
         </nav>
 
         <div class="sidebar-footer">
-          <button class="ghost-button" id="switch-role">Andere rol kiezen</button>
+          <button class="ghost-button" id="switch-role">Uitloggen</button>
           <button class="ghost-button" id="reset-demo">Demo resetten</button>
         </div>
       </aside>
@@ -272,11 +376,7 @@ function bindBaseEvents() {
     button.addEventListener("click", () => setTab(button.dataset.tab));
   });
 
-  document.getElementById("switch-role").addEventListener("click", () => {
-    state.currentRole = null;
-    saveState();
-    render();
-  });
+document.getElementById("switch-role").addEventListener("click", logout);
 
   document.getElementById("reset-demo").addEventListener("click", resetState);
 
